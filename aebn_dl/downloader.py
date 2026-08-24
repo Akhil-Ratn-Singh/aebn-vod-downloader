@@ -10,6 +10,7 @@ from contextlib import nullcontext
 from pathlib import Path
 from threading import Lock
 from typing import Literal
+from urllib.parse import urlparse
 
 from rich.live import Live
 from rich.progress import (
@@ -195,7 +196,7 @@ class Downloader:
         self.session.headers["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
         self.session.headers["Connection"] = "keep-alive"
         # Set age verification cookies for known AEBN domains so the site sees them regardless of served domain
-        cookie_domains = ("straight.aebn.com", "gay.aebn.com", "m.aebn.net", "vod.aebn.com", "aebn.com", "www.aebn.com")
+        cookie_domains = ("straight.aebn.com", "gay.aebn.com", "m.aebn.net", "vod.aebn.com", "aebn.com", "www.aebn.com", ".aebn.com")
         for cookie_domain in cookie_domains:
             try:
                 self.session.cookies.set(name="ageGated", value="true", domain=cookie_domain, path="/", secure=True)
@@ -220,6 +221,25 @@ class Downloader:
                     except Exception:
                         cookie_summary[d] = {}
             self.logger.debug("Initial cookie summary: %s", cookie_summary)
+        except Exception:
+            pass
+        # Prime server-side state by making a lightweight HEAD request to the site's origin so the
+        # server sees our cookies and can set any necessary state (best-effort, non-fatal).
+        try:
+            parsed = urlparse(self.input_url) if hasattr(self, 'input_url') and self.input_url else None
+            origin = None
+            if parsed and parsed.scheme and parsed.netloc:
+                origin = f"{parsed.scheme}://{parsed.netloc}"
+            else:
+                origin = "https://aebn.com"
+            try:
+                # Use HEAD to avoid downloading large content; fall back to GET on failure
+                resp = self.session.head(origin, allow_redirects=True)
+                if resp.status_code and resp.status_code >= 400:
+                    resp = self.session.get(origin)
+                self.logger.debug("Priming request to %s returned %s", origin, getattr(resp, 'status_code', 'n/a'))
+            except Exception as e:
+                self.logger.debug("Priming request to %s failed: %s", origin, e)
         except Exception:
             pass
         if use_proxies:
