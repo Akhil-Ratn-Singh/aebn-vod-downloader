@@ -194,7 +194,34 @@ class Downloader:
         self.session.timeout = 30
         self.session.headers["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
         self.session.headers["Connection"] = "keep-alive"
-        self.session.cookies.update({"ageGated": "true", "terms": ""})
+        # Set age verification cookies for known AEBN domains so the site sees them regardless of served domain
+        cookie_domains = ("straight.aebn.com", "gay.aebn.com", "m.aebn.net", "vod.aebn.com", "aebn.com", "www.aebn.com")
+        for cookie_domain in cookie_domains:
+            try:
+                self.session.cookies.set(name="ageGated", value="true", domain=cookie_domain, path="/", secure=True)
+                self.session.cookies.set(name="terms", value="accepted", domain=cookie_domain, path="/", secure=True)
+            except Exception:
+                # Best-effort: don't fail session creation if cookie API differs
+                pass
+
+        # Debug: log cookies we attempted to set (helpful to verify cookie jar contents)
+        try:
+            cookie_summary = {}
+            for d in cookie_domains:
+                try:
+                    cookie_summary[d] = self.session.cookies.get_dict(domain=d)
+                except Exception:
+                    cookie_summary[d] = {}
+                    try:
+                        domain_cookies = getattr(self.session.cookies, "_cookies", {}).get(d, {})
+                        for path, cookies in domain_cookies.items():
+                            for name, ck in cookies.items():
+                                cookie_summary[d][name] = ck.value
+                    except Exception:
+                        cookie_summary[d] = {}
+            self.logger.debug("Initial cookie summary: %s", cookie_summary)
+        except Exception:
+            pass
         if use_proxies:
             self.session.proxies = {"all": self.proxy}
 
