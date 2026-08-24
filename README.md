@@ -1,6 +1,6 @@
 # aebn-vod-downloader
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/hyper440/aebn-vod-downloader/blob/main/colab.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Akhil-Ratn-Singh/aebn-vod-downloader/blob/main/colab.ipynb)
 
 ## Dependencies
 

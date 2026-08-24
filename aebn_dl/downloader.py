@@ -194,7 +194,7 @@ class Downloader:
         self.session.timeout = 30
         self.session.headers["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
         self.session.headers["Connection"] = "keep-alive"
-        self.session.cookies.update({"ageGated": "", "terms": ""})
+        self.session.cookies.update({"ageGated": "true", "terms": ""})
         if use_proxies:
             self.session.proxies = {"all": self.proxy}
 
